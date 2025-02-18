@@ -56,7 +56,7 @@ export default {
 
   async getDeviceInfo() {
     try {
-      const response = await axios.get(`${DEV_BASE_URL}/get_device_info_json`, {
+      const response = await axios.get(`${DEV_BASE_URL}/device_info_json`, {
         withCredentials: true,
       });
       return response.data;
