@@ -10,19 +10,22 @@ const fetchDeviceStatus = async () => {
 };
 
 const fetchDeviceInfo = async () => {
-  deviceStatusData.value = await api.getDeviceInfo();
+  deviceInfoData.value = await api.getDeviceInfo();
 };
 
-onMounted(async () => {
+const updateData = async () => {
   await fetchDeviceStatus();
   await fetchDeviceInfo();
-});
+};
+
+onMounted(async () => updateData);
 </script>
 
 <template>
   <div>
-    <h1>Device Status</h1>
-    <button @click="fetchDeviceStatus">Refresh</button>
+    <h1>Device Info</h1>
+    <button @click="updateData">Refresh</button>
     <pre>{{ deviceStatusData }}</pre>
+    <pre>{{ deviceInfoData }}</pre>
   </div>
 </template>
