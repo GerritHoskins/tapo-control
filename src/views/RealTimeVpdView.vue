@@ -19,7 +19,9 @@ import type { DataTableColumns } from "naive-ui";
 // WebSocket URL
 let socket: WebSocket | null = null;
 const WS_URL = "ws://localhost:8000/ws/vpd";
-const vpdData = ref<{ timestamp: string; temperature: number; humidity: number; vpd_air: number; vpd_leaf: number }[]>([]);
+const vpdData = ref<
+  { timestamp: string; temperature: number; humidity: number; vpd_air: number; vpd_leaf: number }[]
+>([]);
 
 const pagination = ref({
   pageSize: 10,
@@ -30,11 +32,11 @@ const pagination = ref({
 
 const message = useMessage();
 
-// Function to classify VPD values
+// **Function to classify & color VPD values**
 const classifyVPD = (vpd: number) => {
-  if (vpd >= 0.8 && vpd <= 1.2) return { text: "✅ Optimal", type: "success" };
-  if (vpd < 0.8) return { text: "⚠️ Sub-optimal", type: "warning" };
-  return { text: "❌ Dangerous", type: "error" };
+  if (vpd >= 0.8 && vpd <= 1.2) return { type: "success" }; // ✅ Optimal (Green)
+  if (vpd < 0.8) return { type: "warning" }; // ⚠️ Sub-optimal (Yellow)
+  return { type: "error" }; // ❌ Dangerous (Red)
 };
 
 // **Define Table Columns**
@@ -46,16 +48,22 @@ const columns: DataTableColumns<any> = [
     title: "🌫️ Air VPD (kPa)",
     key: "vpd_air",
     render(row) {
-      const { text, type } = classifyVPD(row.vpd_air);
-      return h(NTag, { type, bordered: false }, { default: () => text });
+      return h(
+        NTag,
+        { type: classifyVPD(row.vpd_air).type, bordered: false },
+        { default: () => `${row.vpd_air.toFixed(2)} kPa` }
+      );
     },
   },
   {
     title: "🌿 Leaf VPD (kPa)",
     key: "vpd_leaf",
     render(row) {
-      const { text, type } = classifyVPD(row.vpd_leaf);
-      return h(NTag, { type, bordered: false }, { default: () => text });
+      return h(
+        NTag,
+        { type: classifyVPD(row.vpd_leaf).type, bordered: false },
+        { default: () => `${row.vpd_leaf.toFixed(2)} kPa` }
+      );
     },
   },
 ];
