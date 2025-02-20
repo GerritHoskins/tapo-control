@@ -2,9 +2,15 @@
   <nav>
     <router-link to="/device-status">Device Status</router-link> |
     <router-link to="/control-panel">Control Panel</router-link> |
-    <router-link to="/sensor-data">Sensor Data</router-link>
+    <router-link to="/sensor-data">Sensor Data</router-link> |
+    <router-link to="/real-time-vpd">Real Time VPD</router-link> |
+    <router-link to="/growth-stage">Growth Stage</router-link>
   </nav>
-  <router-view />
+  <n-config-provider>
+    <n-message-provider>
+      <router-view />
+    </n-message-provider>
+  </n-config-provider>
 </template>
 
 <style lang="scss">

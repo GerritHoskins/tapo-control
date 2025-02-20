@@ -8,61 +8,76 @@ const DEV_BASE_URL = "https://vpd.pixeltronic.dev";
 
 axios.defaults.withCredentials = true;
 
-export default {
-  getDeviceApiUrl(device: string) {
-    if (device === "hub") {
-      return HUB_BASE_URL;
-    } else if (device === "exhaust") {
-      return EXHAUST_BASE_URL;
-    } else {
-      return HUMIDIFIER_BASE_URL;
+export const setVpdTarget = async (stage: string): Promise<void> => {
+  await axios.post(
+    `${DEV_BASE_URL}/set_vpd_target`,
+    { stage },
+    {
+      withCredentials: true,
     }
-  },
+  );
+};
 
-  async toggleDevice(device: string, state: boolean) {
-    try {
-      const selectedDeviceApiUrl = this.getDeviceApiUrl(device);
-      const response = await axios.post(`${DEV_BASE_URL}/${device}/${state}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error toggling device:", error);
-      return { error: "Failed to toggle device" };
-    }
-  },
+export const getVpdTarget = async (): Promise<{ min: number; max: number }> => {
+  const response = await axios.get(`${DEV_BASE_URL}/get_vpd_target`, {
+    withCredentials: true,
+  });
+  return response.data;
+};
 
-  async getSensorData() {
-    try {
-      const response = await axios.get(`${DEV_BASE_URL}/sensor_data`, {
-        withCredentials: true,
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching sensor data:", error);
-      return { error: "Failed to retrieve sensor data" };
-    }
-  },
+export const getDeviceApiUrl = (device: string) => {
+  if (device === "hub") {
+    return HUB_BASE_URL;
+  } else if (device === "exhaust") {
+    return EXHAUST_BASE_URL;
+  } else {
+    return HUMIDIFIER_BASE_URL;
+  }
+};
 
-  async getDeviceStatus() {
-    try {
-      const response = await axios.get(`${DEV_BASE_URL}/device_status`, {
-        withCredentials: true,
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching device status:", error);
-      return { error: "Failed to retrieve device status" };
-    }
-  },
+export const toggleDevice = async (device: string, state: boolean) => {
+  try {
+    //const selectedDeviceApiUrl = getDeviceApiUrl(device);
+    const response = await axios.post(`${DEV_BASE_URL}/${device}/${state}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error toggling device:", error);
+    return { error: "Failed to toggle device" };
+  }
+};
 
-  async getDeviceInfo() {
-    try {
-      const response = await axios.get(`${DEV_BASE_URL}/device_info_json`, {
-        withCredentials: true,
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching info data:", error);
-      return { error: "Failed to retrieve info data" };
-    }
-  },
+export const getSensorData = async () => {
+  try {
+    const response = await axios.get(`${DEV_BASE_URL}/sensor_data`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching sensor data:", error);
+    return { error: "Failed to retrieve sensor data" };
+  }
+};
+
+export const getDeviceStatus = async () => {
+  try {
+    const response = await axios.get(`${DEV_BASE_URL}/device_status`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching device status:", error);
+    return { error: "Failed to retrieve device status" };
+  }
+};
+
+export const getDeviceInfo = async () => {
+  try {
+    const response = await axios.get(`${DEV_BASE_URL}/device_info_json`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching info data:", error);
+    return { error: "Failed to retrieve info data" };
+  }
 };

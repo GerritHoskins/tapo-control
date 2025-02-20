@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { inject, ref, onMounted } from "vue";
+import { ref, onMounted } from "vue";
+import { getDeviceStatus, getDeviceInfo } from "../api";
 
-const api = inject("api");
 const deviceStatusData = ref({});
 const deviceInfoData = ref({});
 
 const fetchDeviceStatus = async () => {
-  deviceStatusData.value = await api.getDeviceStatus();
+  deviceStatusData.value = await getDeviceStatus();
 };
 
 const fetchDeviceInfo = async () => {
-  deviceInfoData.value = await api.getDeviceInfo();
+  deviceInfoData.value = await getDeviceInfo();
 };
 
 const updateData = async () => {

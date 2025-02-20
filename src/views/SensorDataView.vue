@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { inject, ref, onMounted } from "vue";
+import { ref, onMounted } from "vue";
+import { getSensorData } from "../api";
 
-const api = inject("api");
 const sensorData = ref({});
 
 const fetchSensorData = async () => {
-  sensorData.value = await api.getSensorData();
+  sensorData.value = await getSensorData();
 };
 
 onMounted(fetchSensorData);

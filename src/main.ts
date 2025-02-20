@@ -1,6 +1,7 @@
-import { createApp } from "vue";
-import App from "./App.vue";
-import router from "./router";
-import api from "./api";
+import { createApp } from 'vue';
+import "./assets/style.css";
+import App from './App.vue';
+import router from './router';
+import naive from "naive-ui";
 
-createApp(App).provide("api", api).use(router).mount("#app");
+createApp(App).use(router).use(naive).mount('#app')
