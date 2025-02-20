@@ -1,24 +1,30 @@
 <template>
-  <div class="growth-stage">
-    <h2>🌱 Select Plant Growth Stage</h2>
-    <div v-for="(range, stage) in vpdModes" :key="stage" class="option">
-      <button
-        :class="{ selected: selectedStage === stage }"
-        @click="selectStage(stage)"
-      >
-        {{ capitalize(stage) }} ({{ range[0] }} - {{ range[1] }} kPa)
-      </button>
-    </div>
-    <p v-if="selectedStage" class="success">
-      ✅ Selected: {{ capitalize(selectedStage) }}
-    </p>
-  </div>
+  <n-card title="🌱 Select Plant Growth Stage" class="growth-stage">
+    <n-space vertical>
+      <n-radio-group v-model:value="selectedStage" size="large" @update:value="selectStage">
+        <n-radio-button
+          v-for="(range, stage) in vpdModes"
+          :key="stage"
+          :value="stage"
+        >
+          {{ capitalize(stage) }} ({{ range[0] }} - {{ range[1] }} kPa)
+        </n-radio-button>
+      </n-radio-group>
+    </n-space>
+
+    <n-divider />
+
+    <n-alert v-if="selectedStage" type="success" show-icon>
+      ✅ Selected: <strong>{{ capitalize(selectedStage) }}</strong>
+    </n-alert>
+  </n-card>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { setVpdTarget } from "../api";
+import { ref, onMounted } from "vue";
+import { setVpdTarget, getVpdTarget } from "../api"; // Ensure API calls
 
+// Define VPD growth stages
 const vpdModes: Record<string, [number, number]> = {
   propagation: [0.4, 0.8],
   vegetative: [1.1, 1.2],
@@ -27,6 +33,17 @@ const vpdModes: Record<string, [number, number]> = {
 
 const selectedStage = ref<string | null>(null);
 
+// Function to determine stage based on API response
+const getStageFromVpdRange = (min: number, max: number): string | null => {
+  for (const [stage, range] of Object.entries(vpdModes)) {
+    if (range[0] === min && range[1] === max) {
+      return stage;
+    }
+  }
+  return null; // No matching stage found
+};
+
+// Select and update VPD target
 const selectStage = async (stage: string) => {
   selectedStage.value = stage;
   try {
@@ -36,35 +53,25 @@ const selectStage = async (stage: string) => {
   }
 };
 
+// Load current VPD stage on mount
+onMounted(async () => {
+  try {
+    const { min, max } = await getVpdTarget();
+    selectedStage.value = getStageFromVpdRange(min, max);
+  } catch (error) {
+    console.error("⚠️ Failed to fetch current VPD stage:", error);
+  }
+});
+
+// Capitalize text for display
 const capitalize = (text: string) =>
   text.charAt(0).toUpperCase() + text.slice(1);
 </script>
 
 <style scoped>
 .growth-stage {
+  max-width: 100%;
+  margin: auto;
   text-align: center;
-}
-
-.option button {
-  padding: 10px;
-  margin: 5px;
-  border: none;
-  cursor: pointer;
-  background-color: #f0f0f0;
-  transition: 0.3s;
-}
-
-.option button:hover {
-  background-color: #ddd;
-}
-
-.option .selected {
-  background-color: #4caf50;
-  color: white;
-}
-
-.success {
-  margin-top: 10px;
-  color: green;
 }
 </style>
