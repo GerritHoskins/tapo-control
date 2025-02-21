@@ -15,27 +15,44 @@
 import { ref, h, onMounted, onUnmounted } from "vue";
 import { NTag, useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
+import { getVpdTarget } from "../api";
 
-// WebSocket URL
+// **WebSocket URL**
 let socket: WebSocket | null = null;
 const WS_URL = "ws://localhost:8000/ws/vpd";
+// **Tolerance for VPD Classification**
+const VPD_TOLERANCE = 0.05;
 const vpdData = ref<
-  { timestamp: string; temperature: number; humidity: number; vpd_air: number; vpd_leaf: number }[]
+  {
+    timestamp: string;
+    temperature: number;
+    humidity: number;
+    vpd_air: number;
+    vpd_leaf: number;
+  }[]
 >([]);
-
 const pagination = ref({
-  pageSize: 10,
-  showSizePicker: true,
+  pageSize: 1000,
+  showSizePicker: false,
   pageSizes: [5, 10, 20],
-  showQuickJumper: true,
+  showQuickJumper: false,
 });
-
 const message = useMessage();
+const vpdModes: Record<string, [number, number]> = {
+  propagation: [0.4, 0.8],
+  vegetative: [1.1, 1.2],
+  flowering: [1.2, 1.4],
+};
+const selectedStage = ref<string | null>(null);
 
-// **Function to classify & color VPD values**
+// **Function to classify & color VPD values (with tolerance)**
 const classifyVPD = (vpd: number) => {
-  if (vpd >= 0.8 && vpd <= 1.2) return { type: "success" }; // ✅ Optimal (Green)
-  if (vpd < 0.8) return { type: "warning" }; // ⚠️ Sub-optimal (Yellow)
+  const [vpdMin, vpdMax] = vpdModes[selectedStage.value];
+  const minOptimal = vpdMin - VPD_TOLERANCE;
+  const maxOptimal = vpdMax + VPD_TOLERANCE;
+
+  if (vpd >= minOptimal && vpd <= maxOptimal) return { type: "success" }; // ✅ Optimal (Green)
+  if (vpd < minOptimal) return { type: "warning" }; // ⚠️ Sub-optimal (Yellow)
   return { type: "error" }; // ❌ Dangerous (Red)
 };
 
@@ -106,7 +123,20 @@ const connectWebSocket = () => {
   };
 };
 
-onMounted(connectWebSocket);
+const getCurrentVpdTarget = async () => {
+  try {
+    const res = await getVpdTarget();
+    selectedStage.value = res.stage;
+  } catch (error) {
+    console.error("⚠️ Failed to fetch current VPD stage:", error);
+  }
+};
+
+onMounted(async () => {
+  await getCurrentVpdTarget();
+  connectWebSocket();
+});
+
 onUnmounted(() => {
   if (socket) {
     socket.close();

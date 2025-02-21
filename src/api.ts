@@ -8,6 +8,13 @@ const DEV_BASE_URL = "https://vpd.pixeltronic.dev";
 
 axios.defaults.withCredentials = true;
 
+export interface SensorData {
+  temperature: number;  // Air temperature in °C
+  humidity: number;     // Relative humidity in %
+  vpd_air: number;      // Air VPD in kPa
+  vpd_leaf: number;     // Leaf VPD in kPa
+}
+
 export const setVpdTarget = async (stage: string): Promise<void> => {
   await axios.post(
     `${DEV_BASE_URL}/set_vpd_target`,
@@ -70,6 +77,43 @@ export const getDeviceStatus = async () => {
   }
 };
 
+export const getExhaustInfo = async () => {
+    try {
+      const response = await axios.get(`${DEV_BASE_URL}/exhaust_info_json`, {
+        withCredentials: true,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching device status:", error);
+      return { error: "Failed to retrieve device status" };
+    }
+  };
+
+export const getHumidifierInfo = async () => {
+try {
+    const response = await axios.get(`${DEV_BASE_URL}/humidifier_info_json`, {
+    withCredentials: true,
+    });
+    return response.data;
+} catch (error) {
+    console.error("Error fetching device status:", error);
+    return { error: "Failed to retrieve device status" };
+}
+};
+
+export const getDehumidifierInfo = async () => {
+    try {
+        const response = await axios.get(`${DEV_BASE_URL}/dehumidifier_info_json`, {
+        withCredentials: true,
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching device status:", error);
+        return { error: "Failed to retrieve device status" };
+    }
+    };
+    
+
 export const getDeviceInfo = async () => {
   try {
     const response = await axios.get(`${DEV_BASE_URL}/device_info_json`, {
@@ -79,5 +123,15 @@ export const getDeviceInfo = async () => {
   } catch (error) {
     console.error("Error fetching info data:", error);
     return { error: "Failed to retrieve info data" };
+  }
+};
+
+export const getPredictedStates = async (sensorData: SensorData) => {
+  try {
+    const response = await axios.post(`${DEV_BASE_URL}/predict`, sensorData);
+    return response.data;
+  } catch (error) {
+    console.error("Prediction API error:", error);
+    return null;
   }
 };

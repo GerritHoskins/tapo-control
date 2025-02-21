@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { setVpdTarget, getVpdTarget } from "../api"; // Ensure API calls
+import { setVpdTarget, getVpdTarget } from "../api";
 
 // Define VPD growth stages
 const vpdModes: Record<string, [number, number]> = {
@@ -56,8 +56,10 @@ const selectStage = async (stage: string) => {
 // Load current VPD stage on mount
 onMounted(async () => {
   try {
-    const { min, max } = await getVpdTarget();
-    selectedStage.value = getStageFromVpdRange(min, max);
+    const res =  await getVpdTarget();
+    selectedStage.value = res.stage
+    //const { min, max } = await getVpdTarget();
+    //selectedStage.value = getStageFromVpdRange(min, max);
   } catch (error) {
     console.error("⚠️ Failed to fetch current VPD stage:", error);
   }
