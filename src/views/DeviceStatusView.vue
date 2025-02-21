@@ -1,88 +1,219 @@
 <template>
   <n-card title="🔌 Device Status" class="device-status">
-    <n-data-table
-      :bordered="false"
-      :columns="columns"
-      :data="deviceData"
-      :pagination="pagination"
-    />
+    <n-space vertical>
+      <n-data-table
+        :bordered="false"
+        :columns="columns"
+        :data="deviceData"
+        :pagination="pagination"
+      />
+    </n-space>
+  </n-card>
+  <n-card title="🔧 Device Control Panel" class="control-panel">
+    <n-space vertical :size="12">
+      <!-- Humidifier Controls -->
+      <n-button-group>
+        <n-button @click="toggleTapoDevice('humidifier', 'on')" type="primary">
+          💦 Turn Humidifier ON
+        </n-button>
+        <n-button @click="toggleTapoDevice('humidifier', 'off')" type="warning">
+          ❌ Turn Humidifier OFF
+        </n-button>
+      </n-button-group>
+
+      <!-- Exhaust Controls -->
+      <n-button-group>
+        <n-button @click="toggleTapoDevice('exhaust', 'on')" type="primary">
+          🌬️ Turn Exhaust ON
+        </n-button>
+        <n-button @click="toggleTapoDevice('exhaust', 'off')" type="warning">
+          ❌ Turn Exhaust OFF
+        </n-button>
+      </n-button-group>
+
+      <!-- Dehumidifier Controls -->
+      <n-button-group>
+        <n-button
+          @click="toggleTapoDevice('dehumidifier', 'on')"
+          type="primary"
+        >
+          🏜️ Turn Dehumidifier ON
+        </n-button>
+        <n-button
+          @click="toggleTapoDevice('dehumidifier', 'off')"
+          type="warning"
+        >
+          ❌ Turn Dehumidifier OFF
+        </n-button>
+      </n-button-group>
+
+      <!-- Device Status Display -->
+      <n-divider />
+      <n-alert type="info" title="Device Status" show-icon>
+        <pre>{{ deviceStatus }}</pre>
+      </n-alert>
+    </n-space>
   </n-card>
 </template>
 
 <script setup lang="ts">
-import { getDeviceStatus, getExhaustInfo, getHumidifierInfo, getDehumidifierInfo } from "../api";
+import {
+  getDeviceStatus,
+  getExhaustInfo,
+  getHumidifierInfo,
+  getDehumidifierInfo,
+  toggleDevice,
+} from "../api";
 import { ref, h, onMounted } from "vue";
-import { NTag } from "naive-ui";
+import { NTag, NTooltip, useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
 
-const deviceStatusData = ref({});
-const exhaustInfoData = ref({});
-const humidifierInfoData = ref({});
+const message = useMessage();
 
-// Sample Device Data (Replace with API data)
-const deviceData = ref([]);
+const deviceData = ref<Array<Record<string, any>>>([]);
 const pagination = ref({
   pageSize: 10,
 });
 
-// **Function to classify signal strength**
-const classifySignal = (rssi: number) => {
-  if (rssi >= -50) return { text: "📶 Excellent", type: "success" };
-  if (rssi >= -70) return { text: "📡 Good", type: "warning" };
-  return { text: "🚨 Weak", type: "error" };
+const deviceStatus = ref<Record<string, boolean>>({
+  humidifier: false,
+  exhaust: false,
+  dehumidifier: false,
+});
+
+// Function to toggle devices
+const toggleTapoDevice = async (device: string, state: "on" | "off") => {
+  try {
+    const response = await toggleDevice(device, state === "on");
+    deviceStatus.value[device] = state === "on";
+    message.success(
+      `${
+        device.charAt(0).toUpperCase() + device.slice(1)
+      } turned ${state.toUpperCase()}`
+    );
+  } catch (error) {
+    message.error(`Failed to toggle ${device}`);
+    console.error(error);
+  }
 };
 
-// **Define Table Columns**
+/** 🔄 Fetch Device Data */
+const fetchDeviceInfo = async () => {
+  try {
+    const exhaustData = await getExhaustInfo();
+    const humidifierData = await getHumidifierInfo();
+    const dehumidifierData = await getDehumidifierInfo();
+
+    // Decode Base64 names
+    exhaustData.nickname = decodeBase64(exhaustData.nickname) || "Exhaust";
+    humidifierData.nickname =
+      decodeBase64(humidifierData.nickname) || "Humidifier";
+    dehumidifierData.nickname =
+      decodeBase64(dehumidifierData.nickname) || "Dehumidifier";
+
+    // Map devices into table
+    deviceData.value = [exhaustData, humidifierData, dehumidifierData];
+  } catch (error) {
+    console.error("🚨 Error fetching device info:", error);
+  }
+};
+
+/** 🧩 Decode Base64 Nicknames */
+const decodeBase64 = (str: string | null) => {
+  try {
+    return str ? atob(str) : "Unknown";
+  } catch {
+    return "Unknown";
+  }
+};
+
+/** 🏷️ Function to classify device status */
+const classifyStatus = (
+  status: boolean
+): { type: "success" | "error"; label: string } => {
+  return {
+    type: status ? "success" : "error",
+    label: status ? "ON" : "OFF",
+  };
+};
+
+/** 📶 Classify Signal Strength */
+const classifySignalStrength = (
+  rssi: number
+): { type: "error" | "warning" | "success"; label: string } => {
+  if (rssi <= -80) return { type: "error", label: "Weak" }; // ❌ Poor signal
+  if (rssi > -80 && rssi <= -60) return { type: "warning", label: "Moderate" }; // ⚠️ Moderate signal
+  return { type: "success", label: "Strong" }; // ✅ Strong signal
+};
+
+/** 📝 Define Table Columns */
 const columns: DataTableColumns<any> = [
-  { title: "📛 Name", key: "nickname" },
-  { title: "🆔 Model", key: "model" },
-  { title: "🌐 IP Address", key: "ip" },
-  {
-    title: "⚡ Status",
-    key: "device_on",
-    render(row) {
-      return h(
-        NTag,
-        { type: row.device_on ? "success" : "error", bordered: false },
-        { default: () => (row.device_on ? "🟢 ON" : "🔴 OFF") }
-      );
-    },
-  },
+  { title: "📌 Nickname", key: "nickname" },
+  { title: "📡 IP Address", key: "ip" },
   {
     title: "📶 Signal Strength",
     key: "rssi",
     render(row) {
-      const { text, type } = classifySignal(row.rssi);
-      return h(NTag, { type, bordered: false }, { default: () => text });
+      const signal = classifySignalStrength(row.rssi);
+      return h(
+        NTag,
+        { type: signal.type, bordered: false },
+        { default: () => `${signal.label} (${row.rssi} dBm)` }
+      );
+    },
+  },
+
+  {
+    title: "⚡ Power Status",
+    key: "device_on",
+    render(row) {
+      const status = classifyStatus(row.device_on);
+      return h(
+        NTag,
+        { type: status.type as "success" | "error", bordered: false },
+        { default: () => status.label }
+      );
+    },
+  },
+  {
+    title: "🔥 Overheat",
+    key: "overheated",
+    render(row) {
+      return h(
+        NTag,
+        { type: row.overheated ? "error" : "success", bordered: false },
+        { default: () => (row.overheated ? "Overheated" : "Normal") }
+      );
+    },
+  },
+  {
+    title: "⏳ On Time (s)",
+    key: "on_time",
+    render(row) {
+      return row.on_time ? `${row.on_time} sec` : "N/A";
     },
   },
 ];
-
-const fetchDeviceInfo = async () => {
-  const exhaustData = await getExhaustInfo();
-  const humidifierData = await getHumidifierInfo();
-  const dehumidifierData = await getDehumidifierInfo();
-  const deviceStatusData = await getDeviceStatus();
-
-  // Ensure the nickname property is properly set
-  exhaustData.nickname = "Exhaust";
-  humidifierData.nickname = "Humidifier";
-  dehumidifierData.nickname = "Dehumidifier";
-
-  deviceStatusData.device_on = true;
-
-  // Reset the device list and update with fresh data
-  deviceData.value = [exhaustData, humidifierData, dehumidifierData, deviceStatusData];
-};
 
 const updateData = async () => {
   await fetchDeviceInfo();
 };
 
-onMounted(async () => 
-{
-  await updateData()
-  console.log(deviceData.value)
-}
-);
+onMounted(async () => {
+  await updateData();
+  console.log(deviceData.value);
+});
 </script>
+
+<style scoped>
+.control-panel,
+.device-status {
+  max-width: 100%;
+  margin: auto;
+  text-align: center;
+}
+
+.control-panel {
+  margin-top: 16px;
+}
+</style>

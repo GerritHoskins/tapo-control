@@ -1,13 +1,38 @@
 <template>
   <n-config-provider>
-    <n-space vertical :size="12">
-      <n-data-table
-        :bordered="false"
-        :columns="columns"
-        :data="vpdData"
-        :pagination="pagination"
-      />
-    </n-space>
+    <n-card title="🌱 Select Plant Growth Stage" class="growth-stage">
+      <n-space vertical>
+        <n-radio-group
+          v-model:value="selectedStage"
+          size="large"
+          @update:value="selectStage"
+        >
+          <n-radio-button
+            v-for="(range, stage) in vpdModes"
+            :key="stage"
+            :value="stage"
+          >
+            {{ capitalize(stage) }} ({{ range[0] }} - {{ range[1] }} kPa)
+          </n-radio-button>
+        </n-radio-group>
+      </n-space>
+
+      <n-divider />
+
+      <n-alert v-if="selectedStage" type="success" show-icon>
+        ✅ Selected: <strong>{{ capitalize(selectedStage) }}</strong>
+      </n-alert>
+    </n-card>
+    <n-card title="🔮 Real Time Vpd" class="rt-vpd">
+      <n-space vertical :size="12">
+        <n-data-table
+          :bordered="false"
+          :columns="columns"
+          :data="vpdData"
+          :pagination="pagination"
+        />
+      </n-space>
+    </n-card>
   </n-config-provider>
 </template>
 
@@ -15,12 +40,10 @@
 import { ref, h, onMounted, onUnmounted } from "vue";
 import { NTag, useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
-import { getVpdTarget } from "../api";
+import { setVpdTarget, getVpdTarget } from "../api";
 
-// **WebSocket URL**
 let socket: WebSocket | null = null;
 const WS_URL = "ws://localhost:8000/ws/vpd";
-// **Tolerance for VPD Classification**
 const VPD_TOLERANCE = 0.05;
 const vpdData = ref<
   {
@@ -45,8 +68,29 @@ const vpdModes: Record<string, [number, number]> = {
 };
 const selectedStage = ref<string | null>(null);
 
+// Function to determine stage based on API response
+const getStageFromVpdRange = (min: number, max: number): string | null => {
+  for (const [stage, range] of Object.entries(vpdModes)) {
+    if (range[0] === min && range[1] === max) {
+      return stage;
+    }
+  }
+  return null; // No matching stage found
+};
+
+// Select and update VPD target
+const selectStage = async (stage: string) => {
+  selectedStage.value = stage;
+  try {
+    await setVpdTarget(stage);
+  } catch (error) {
+    console.error("Failed to set VPD target:", error);
+  }
+};
+
 // **Function to classify & color VPD values (with tolerance)**
 const classifyVPD = (vpd: number) => {
+  if (!selectedStage.value) return { type: "default" }; // Ensure a valid default return
   const [vpdMin, vpdMax] = vpdModes[selectedStage.value];
   const minOptimal = vpdMin - VPD_TOLERANCE;
   const maxOptimal = vpdMax + VPD_TOLERANCE;
@@ -65,9 +109,13 @@ const columns: DataTableColumns<any> = [
     title: "🌫️ Air VPD (kPa)",
     key: "vpd_air",
     render(row) {
+      const vpdInfo = classifyVPD(row.vpd_air) || { type: "default" }; // Default return
       return h(
         NTag,
-        { type: classifyVPD(row.vpd_air).type, bordered: false },
+        {
+          type: vpdInfo.type as "success" | "warning" | "error" | "default",
+          bordered: false,
+        },
         { default: () => `${row.vpd_air.toFixed(2)} kPa` }
       );
     },
@@ -76,9 +124,13 @@ const columns: DataTableColumns<any> = [
     title: "🌿 Leaf VPD (kPa)",
     key: "vpd_leaf",
     render(row) {
+      const vpdInfo = classifyVPD(row.vpd_leaf) || { type: "default" }; // Default return
       return h(
         NTag,
-        { type: classifyVPD(row.vpd_leaf).type, bordered: false },
+        {
+          type: vpdInfo.type as "success" | "warning" | "error" | "default",
+          bordered: false,
+        },
         { default: () => `${row.vpd_leaf.toFixed(2)} kPa` }
       );
     },
@@ -126,11 +178,20 @@ const connectWebSocket = () => {
 const getCurrentVpdTarget = async () => {
   try {
     const res = await getVpdTarget();
-    selectedStage.value = res.stage;
+    //selectedStage.value = res.stage;
+    if (res && res.stage) {
+      console.log(res)
+      //selectedStage.value = getStageFromVpdRange(res.min, res.max);
+      selectedStage.value = res.stage 
+    }
   } catch (error) {
     console.error("⚠️ Failed to fetch current VPD stage:", error);
   }
 };
+
+// Capitalize text for display
+const capitalize = (text: string) =>
+  text.charAt(0).toUpperCase() + text.slice(1);
 
 onMounted(async () => {
   await getCurrentVpdTarget();
@@ -143,3 +204,15 @@ onUnmounted(() => {
   }
 });
 </script>
+
+<style scoped>
+.rt-vpd,
+.growth-stage {
+  max-width: 100%;
+  margin: auto;
+  text-align: center;
+}
+.rt-vpd {
+  margin-top: 16px;
+}
+</style>

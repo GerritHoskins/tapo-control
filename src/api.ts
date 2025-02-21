@@ -9,10 +9,11 @@ const DEV_BASE_URL = "https://vpd.pixeltronic.dev";
 axios.defaults.withCredentials = true;
 
 export interface SensorData {
-  temperature: number;  // Air temperature in °C
-  humidity: number;     // Relative humidity in %
-  vpd_air: number;      // Air VPD in kPa
-  vpd_leaf: number;     // Leaf VPD in kPa
+  temperature: number; // Air temperature in °C
+  humidity: number; // Relative humidity in %
+  leaf_temperature: number;
+  vpd_air: number; // Air VPD in kPa
+  vpd_leaf: number; // Leaf VPD in kPa
 }
 
 export const setVpdTarget = async (stage: string): Promise<void> => {
@@ -25,7 +26,8 @@ export const setVpdTarget = async (stage: string): Promise<void> => {
   );
 };
 
-export const getVpdTarget = async (): Promise<{ min: number; max: number }> => {
+//export const getVpdTarget = async (): Promise<{ min: number; max: number }> => {
+export const getVpdTarget = async (): Promise<{ stage: string }> => {
   const response = await axios.get(`${DEV_BASE_URL}/get_vpd_target`, {
     withCredentials: true,
   });
@@ -78,41 +80,40 @@ export const getDeviceStatus = async () => {
 };
 
 export const getExhaustInfo = async () => {
-    try {
-      const response = await axios.get(`${DEV_BASE_URL}/exhaust_info_json`, {
-        withCredentials: true,
-      });
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching device status:", error);
-      return { error: "Failed to retrieve device status" };
-    }
-  };
-
-export const getHumidifierInfo = async () => {
-try {
-    const response = await axios.get(`${DEV_BASE_URL}/humidifier_info_json`, {
-    withCredentials: true,
+  try {
+    const response = await axios.get(`${DEV_BASE_URL}/exhaust_info_json`, {
+      withCredentials: true,
     });
     return response.data;
-} catch (error) {
+  } catch (error) {
     console.error("Error fetching device status:", error);
     return { error: "Failed to retrieve device status" };
-}
+  }
+};
+
+export const getHumidifierInfo = async () => {
+  try {
+    const response = await axios.get(`${DEV_BASE_URL}/humidifier_info_json`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching device status:", error);
+    return { error: "Failed to retrieve device status" };
+  }
 };
 
 export const getDehumidifierInfo = async () => {
-    try {
-        const response = await axios.get(`${DEV_BASE_URL}/dehumidifier_info_json`, {
-        withCredentials: true,
-        });
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching device status:", error);
-        return { error: "Failed to retrieve device status" };
-    }
-    };
-    
+  try {
+    const response = await axios.get(`${DEV_BASE_URL}/dehumidifier_info_json`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching device status:", error);
+    return { error: "Failed to retrieve device status" };
+  }
+};
 
 export const getDeviceInfo = async () => {
   try {
@@ -132,6 +133,44 @@ export const getPredictedStates = async (sensorData: SensorData) => {
     return response.data;
   } catch (error) {
     console.error("Prediction API error:", error);
+    return null;
+  }
+};
+
+export const getPredictionData = async () => {
+  try {
+    const response = await axios.get(`${DEV_BASE_URL}/get_prediction_data`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Prediction API error:", error);
+    return null;
+  }
+};
+
+export const detectAnomaly = async (sensorData: any): Promise<boolean | null> => {
+  try {
+    // Ensure the payload contains all required fields
+    if (!sensorData.temperature || !sensorData.leaf_temperature || !sensorData.humidity || !sensorData.vpd_air || !sensorData.vpd_leaf) {
+      console.error("⚠️ Missing required fields in sensorData:", sensorData);
+      return null;
+    }
+
+    const response = await axios.post(`${DEV_BASE_URL}/detect_anomaly`, sensorData);
+    return response.data.anomaly_detected;
+  } catch (error) {
+    console.error("⚠️ Anomaly Detection API error:", error);
+    return null;
+  }
+};
+
+export const getOptimizedControl = async (sensorData: any): Promise<string | null> => {
+  try {
+    const response = await axios.post(`${DEV_BASE_URL}/optimize_control`, sensorData);
+    return response.data.best_action;
+  } catch (error) {
+    console.error("⚠️ RL Control API error:", error);
     return null;
   }
 };
