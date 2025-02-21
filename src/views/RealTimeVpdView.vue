@@ -180,9 +180,9 @@ const getCurrentVpdTarget = async () => {
     const res = await getVpdTarget();
     //selectedStage.value = res.stage;
     if (res && res.stage) {
-      console.log(res)
+      console.log(res);
       //selectedStage.value = getStageFromVpdRange(res.min, res.max);
-      selectedStage.value = res.stage 
+      selectedStage.value = res.stage;
     }
   } catch (error) {
     console.error("⚠️ Failed to fetch current VPD stage:", error);
