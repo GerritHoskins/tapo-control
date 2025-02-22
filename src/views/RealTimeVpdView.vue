@@ -63,8 +63,8 @@ const pagination = ref({
 const message = useMessage();
 const vpdModes: Record<string, [number, number]> = {
   propagation: [0.4, 0.8],
-  vegetative: [1.1, 1.2],
-  flowering: [1.2, 1.4],
+  vegetative: [0.8, 1.2],
+  flowering: [1.2, 1.6],
 };
 const selectedStage = ref<string | null>(null);
 

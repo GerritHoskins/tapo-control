@@ -174,3 +174,13 @@ export const getOptimizedControl = async (sensorData: any): Promise<string | nul
     return null;
   }
 };
+
+export const getPredictedAction = async (sensorData: Record<string, any>) => {
+  try {
+    const response = await axios.post(`${DEV_BASE_URL}/predict_action`, sensorData);
+    return response.data.recommended_action;
+  } catch (error) {
+    console.error("🚨 RL Prediction API Error:", error);
+    return null;
+  }
+};

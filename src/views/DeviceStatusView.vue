@@ -58,14 +58,13 @@
 
 <script setup lang="ts">
 import {
-  getDeviceStatus,
   getExhaustInfo,
   getHumidifierInfo,
   getDehumidifierInfo,
   toggleDevice,
 } from "../api";
 import { ref, h, onMounted } from "vue";
-import { NTag, NTooltip, useMessage } from "naive-ui";
+import { NTag, useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
 
 const message = useMessage();

@@ -2,7 +2,7 @@
   <n-card title="🔮 Predicted Device States" class="prediction-card">
     <n-space vertical>
       <n-button type="primary" @click="predict"> 🔄 Get Predictions </n-button>
-
+      <n-button type="primary" @click="predict"> 🔄 Get Predictions </n-button>
       <n-data-table
         :columns="columns"
         :data="predictedData"
@@ -29,7 +29,7 @@
 import { ref, h, onMounted } from "vue";
 import { NTag, NButton, useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
-import { getPredictedStates, getPredictionData, detectAnomaly } from "../api";
+import { getPredictedStates, getPredictionData, detectAnomaly, getPredictedAction } from "../api";
 import type { SensorData } from "../api";
 
 const message = useMessage();
@@ -65,6 +65,7 @@ const predict = async () => {
   await fetchPredictionData();
   await fetchPredictions();
   await fetchAnomalyStatus();
+  await getPredictedAction(sensorData.value)
 };
 
 const fetchPredictions = async () => {
