@@ -47,7 +47,7 @@ export const getDeviceApiUrl = (device: string) => {
   }
 };
 
-export const toggleDevice = async (device: string, state: boolean) => {
+export const toggleDevice = async (device: string, state: "on" | "off") => {
   try {
     //const selectedDeviceApiUrl = getDeviceApiUrl(device);
     const response = await axios.post(`${DEV_BASE_URL}/${device}/${state}`);
