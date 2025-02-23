@@ -36,15 +36,16 @@ const message = useMessage();
 const predictedData = ref<Array<{ device: string; state: boolean }>>([]);
 const pagination = ref({ pageSize: 5, showSizePicker: false });
 const isAnomaly = ref<boolean | null>(null);
+const anomalyMessage = ref("");
 const sensorData = ref<SensorData>({
   temperature: 25.3,
   leaf_temperature: 24.3,
   humidity: 57,
   vpd_air: 1.2,
   vpd_leaf: 1.1,
-  exhaust: undefined,
-  humidifier: undefined,
-  dehumidifier: undefined,
+  exhaust: 0,
+  humidifier: 0,
+  dehumidifier: 0,
 });
 
 const columns: DataTableColumns<any> = [
@@ -60,11 +61,25 @@ const columns: DataTableColumns<any> = [
   },
 ];
 
-const fetchAnomalyStatus = async () => {
-  isAnomaly.value = await detectAnomaly(sensorData.value);
-};
+async function fetchAnomalyStatus() {
+  const sensorData = await getPredictionData();
+  const anomalyResponse = await detectAnomaly(sensorData);
+  isAnomaly.value = anomalyResponse.anomaly_detected;
+
+  if (isAnomaly.value) {
+    anomalyMessage.value = "🚨 Anomaly detected! Check sensor readings.";
+  } else {
+    anomalyMessage.value = "";
+  }
+}
 
 const predict = async () => {
+  await fetchAnomalyStatus();
+  if (isAnomaly.value) {
+    console.warn("🚫 Skipping prediction due to anomaly.");
+    return;
+  }
+  console.log("✅ No anomaly detected. Proceeding with prediction...");
   await fetchPredictionData();
   await fetchPredictions();
   await fetchAnomalyStatus();
