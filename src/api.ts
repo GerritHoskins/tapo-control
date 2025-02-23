@@ -14,6 +14,9 @@ export interface SensorData {
   leaf_temperature: number;
   vpd_air: number; // Air VPD in kPa
   vpd_leaf: number; // Leaf VPD in kPa
+  exhaust?: number;
+  humidifier?: number;
+  dehumidifier?: number;
 }
 
 export const setVpdTarget = async (stage: string): Promise<void> => {
@@ -149,25 +152,41 @@ export const getPredictionData = async () => {
   }
 };
 
-export const detectAnomaly = async (sensorData: any): Promise<boolean | null> => {
-  try {
-    // Ensure the payload contains all required fields
-    if (!sensorData.temperature || !sensorData.leaf_temperature || !sensorData.humidity || !sensorData.vpd_air || !sensorData.vpd_leaf) {
-      console.error("⚠️ Missing required fields in sensorData:", sensorData);
-      return null;
-    }
+export const detectAnomaly = async (sensorData: any) => {
+  console.log("🔍 Sending data for anomaly detection:", sensorData);
 
-    const response = await axios.post(`${DEV_BASE_URL}/detect_anomaly`, sensorData);
-    return response.data.anomaly_detected;
+  // Ensure all expected features exist
+  const formattedData = {
+    temperature: sensorData.temperature ?? 0,
+    leaf_temperature: sensorData.leaf_temperature ?? 0,
+    humidity: sensorData.humidity ?? 0,
+    vpd_air: sensorData.vpd_air ?? 0,
+    vpd_leaf: sensorData.vpd_leaf ?? 0,
+    exhaust: sensorData.exhaust ?? 0,
+    humidifier: sensorData.humidifier ?? 0,
+    dehumidifier: sensorData.dehumidifier ?? 0,
+  };
+
+  try {
+    const response = await axios.post(
+      `${DEV_BASE_URL}/detect_anomaly`,
+      formattedData
+    );
+    return response.data;
   } catch (error) {
     console.error("⚠️ Anomaly Detection API error:", error);
     return null;
   }
 };
 
-export const getOptimizedControl = async (sensorData: any): Promise<string | null> => {
+export const getOptimizedControl = async (
+  sensorData: any
+): Promise<string | null> => {
   try {
-    const response = await axios.post(`${DEV_BASE_URL}/optimize_control`, sensorData);
+    const response = await axios.post(
+      `${DEV_BASE_URL}/optimize_control`,
+      sensorData
+    );
     return response.data.best_action;
   } catch (error) {
     console.error("⚠️ RL Control API error:", error);
@@ -177,7 +196,10 @@ export const getOptimizedControl = async (sensorData: any): Promise<string | nul
 
 export const getPredictedAction = async (sensorData: Record<string, any>) => {
   try {
-    const response = await axios.post(`${DEV_BASE_URL}/predict_action`, sensorData);
+    const response = await axios.post(
+      `${DEV_BASE_URL}/predict_action`,
+      sensorData
+    );
     return response.data.recommended_action;
   } catch (error) {
     console.error("🚨 RL Prediction API Error:", error);

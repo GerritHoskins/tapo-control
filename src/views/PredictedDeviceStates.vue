@@ -42,6 +42,9 @@ const sensorData = ref<SensorData>({
   humidity: 57,
   vpd_air: 1.2,
   vpd_leaf: 1.1,
+  exhaust: undefined,
+  humidifier: undefined,
+  dehumidifier: undefined,
 });
 
 const columns: DataTableColumns<any> = [
