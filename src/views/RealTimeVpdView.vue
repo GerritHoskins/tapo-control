@@ -12,7 +12,7 @@
             :key="stage"
             :value="stage"
           >
-            {{ capitalize(stage) }} ({{ range[0] }} - {{ range[1] }} kPa)
+            {{ capitalize(stage.toString()) }} ({{ range[0] }} - {{ range[1] }} kPa)
           </n-radio-button>
         </n-radio-group>
       </n-space>
@@ -20,10 +20,11 @@
       <n-divider />
 
       <n-alert v-if="selectedStage" type="success" show-icon>
-        ✅ Selected: <strong>{{ capitalize(selectedStage) }}</strong>
+        ✅ Selected: <strong>{{ capitalize(selectedStage.toString()) }}</strong>
       </n-alert>
     </n-card>
-    <n-card title="🔮 Real Time Vpd" class="rt-vpd">
+
+    <n-card title="🔮 Real-Time VPD Monitoring" class="rt-vpd">
       <n-space vertical :size="12">
         <n-data-table
           :bordered="false"
@@ -37,22 +38,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted, onUnmounted } from "vue";
+import { ref, h, onMounted, computed, onUnmounted } from "vue";
 import { NTag, useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
 import { setVpdTarget, getVpdTarget } from "../api";
+import type { VpdModes } from "../types/settings.interface";
+import { useSettingsStore } from "../stores/settings.store";
+
+const settingsStore = useSettingsStore();
+const message = useMessage();
 
 let socket: WebSocket | null = null;
-const WS_URL = "ws://localhost:8000/ws/vpd";
-const VPD_TOLERANCE = 0.05;
 const vpdData = ref<
-  {
+  Array<{
     timestamp: string;
     temperature: number;
     humidity: number;
     vpd_air: number;
     vpd_leaf: number;
-  }[]
+  }>
 >([]);
 const pagination = ref({
   pageSize: 1000,
@@ -60,56 +64,40 @@ const pagination = ref({
   pageSizes: [5, 10, 20],
   showQuickJumper: false,
 });
-const message = useMessage();
-const vpdModes: Record<string, [number, number]> = {
-  propagation: [0.4, 0.8],
-  vegetative: [0.8, 1.2],
-  flowering: [1.2, 1.6],
-};
-const selectedStage = ref<string | null>(null);
+const vpdModes = ref<VpdModes | null>(null);
+const selectedStage = ref<keyof VpdModes | null>(null);
 
-// Function to determine stage based on API response
-const getStageFromVpdRange = (min: number, max: number): string | null => {
-  for (const [stage, range] of Object.entries(vpdModes)) {
-    if (range[0] === min && range[1] === max) {
-      return stage;
-    }
-  }
-  return null; // No matching stage found
-};
-
-// Select and update VPD target
-const selectStage = async (stage: string) => {
+const selectStage = async (stage: keyof VpdModes) => {
   selectedStage.value = stage;
   try {
-    await setVpdTarget(stage);
+    await setVpdTarget(stage.toString());
   } catch (error) {
-    console.error("Failed to set VPD target:", error);
+    console.error("⚠️ Failed to set VPD target:", error);
   }
 };
 
-// **Function to classify & color VPD values (with tolerance)**
 const classifyVPD = (vpd: number) => {
-  if (!selectedStage.value) return { type: "default" }; // Ensure a valid default return
-  const [vpdMin, vpdMax] = vpdModes[selectedStage.value];
+  if (!selectedStage.value || !vpdModes.value) return { type: "default" };
+  const VPD_TOLERANCE = settingsStore.config?.KPA_TOLERANCE ?? 0.05;
+  const [vpdMin, vpdMax] = vpdModes.value[selectedStage.value];
   const minOptimal = vpdMin - VPD_TOLERANCE;
   const maxOptimal = vpdMax + VPD_TOLERANCE;
-
-  if (vpd >= minOptimal && vpd <= maxOptimal) return { type: "success" }; // ✅ Optimal (Green)
-  if (vpd < minOptimal) return { type: "warning" }; // ⚠️ Sub-optimal (Yellow)
-  return { type: "error" }; // ❌ Dangerous (Red)
+  return vpd >= minOptimal && vpd <= maxOptimal
+    ? { type: "success" } // ✅ Optimal (Green)
+    : vpd < minOptimal
+    ? { type: "warning" } // ⚠️ Sub-optimal (Yellow)
+    : { type: "error" }; // ❌ Dangerous (Red)
 };
 
-// **Define Table Columns**
 const columns: DataTableColumns<any> = [
   { title: "📅 Timestamp", key: "timestamp" },
   { title: "🌡️ Temperature (°C)", key: "temperature" },
-  { title: "💧 Humidity (%)", key: "humidity" }, // ✅ Fixed Humidity Column
+  { title: "💧 Humidity (%)", key: "humidity" },
   {
     title: "🌫️ Air VPD (kPa)",
     key: "vpd_air",
     render(row) {
-      const vpdInfo = classifyVPD(row.vpd_air) || { type: "default" }; // Default return
+      const vpdInfo = classifyVPD(row.vpd_air);
       return h(
         NTag,
         {
@@ -124,7 +112,7 @@ const columns: DataTableColumns<any> = [
     title: "🌿 Leaf VPD (kPa)",
     key: "vpd_leaf",
     render(row) {
-      const vpdInfo = classifyVPD(row.vpd_leaf) || { type: "default" }; // Default return
+      const vpdInfo = classifyVPD(row.vpd_leaf);
       return h(
         NTag,
         {
@@ -137,13 +125,14 @@ const columns: DataTableColumns<any> = [
   },
 ];
 
-// **WebSocket Connection**
-const connectWebSocket = () => {
+const connectWebSocket = (WS_URL: string) => {
+  if (socket) {
+    socket.close();
+  }
+
   socket = new WebSocket(WS_URL);
 
-  socket.onopen = () => {
-    message.success("✅ WebSocket Connected");
-  };
+  socket.onopen = () => message.success("✅ WebSocket Connected");
 
   socket.onmessage = (event) => {
     try {
@@ -151,57 +140,51 @@ const connectWebSocket = () => {
       vpdData.value.unshift({
         timestamp: new Date().toLocaleTimeString(),
         temperature: data.temperature,
-        humidity: data.humidity ?? 0, // ✅ Ensure Humidity is Mapped Correctly
+        humidity: data.humidity ?? 0,
         vpd_air: data.vpd_air,
         vpd_leaf: data.vpd_leaf,
       });
 
       // Keep only the last 20 entries for performance
-      if (vpdData.value.length > 20) {
-        vpdData.value.pop();
-      }
+      if (vpdData.value.length > 20) vpdData.value.pop();
     } catch (error) {
       message.error("⚠️ Failed to parse WebSocket data.");
     }
   };
 
-  socket.onerror = () => {
-    message.error("🚨 WebSocket Error: Connection Issue");
-  };
+  socket.onerror = () => message.error("🚨 WebSocket Error: Connection Issue");
 
   socket.onclose = () => {
     message.warning("🔌 WebSocket Disconnected. Reconnecting...");
-    setTimeout(connectWebSocket, 3000);
+    setTimeout(() => connectWebSocket(WS_URL), 3000);
   };
 };
 
 const getCurrentVpdTarget = async () => {
   try {
     const res = await getVpdTarget();
-    //selectedStage.value = res.stage;
-    if (res && res.stage) {
-      console.log(res);
-      //selectedStage.value = getStageFromVpdRange(res.min, res.max);
-      selectedStage.value = res.stage;
-    }
+    if (res?.stage) selectedStage.value = res.stage;
   } catch (error) {
     console.error("⚠️ Failed to fetch current VPD stage:", error);
   }
 };
 
-// Capitalize text for display
-const capitalize = (text: string) =>
-  text.charAt(0).toUpperCase() + text.slice(1);
+const capitalize = computed(
+  () => (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+);
 
 onMounted(async () => {
+  await settingsStore.fetchConfigSettings();
+  vpdModes.value = settingsStore.config?.VPD_MODES || null;
   await getCurrentVpdTarget();
-  connectWebSocket();
+
+  if (settingsStore.config?.WS_URL) {
+    connectWebSocket(settingsStore.config.WS_URL);
+  }
 });
 
 onUnmounted(() => {
-  if (socket) {
-    socket.close();
-  }
+  if (socket) socket.close();
 });
 </script>
 

@@ -50,6 +50,7 @@ export const getDeviceApiUrl = (device: string) => {
 export const toggleDevice = async (device: string, state: "on" | "off") => {
   try {
     //const selectedDeviceApiUrl = getDeviceApiUrl(device);
+    console.log(state)
     const response = await axios.post(`${DEV_BASE_URL}/${device}/${state}`);
     return response.data;
   } catch (error) {
@@ -206,3 +207,5 @@ export const getPredictedAction = async (sensorData: Record<string, any>) => {
     return null;
   }
 };
+
+

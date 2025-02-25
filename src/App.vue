@@ -11,6 +11,14 @@
   </n-config-provider>
 </template>
 
+<script setup lang="ts">
+import { onMounted } from "vue";
+import { useSettingsStore } from "./stores/settings.store";
+const settingStore = useSettingsStore();
+
+onMounted(async () => await settingStore.fetchConfigSettings);
+</script>
+
 <style lang="scss">
 #app {
   text-align: center;

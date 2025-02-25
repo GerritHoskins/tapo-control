@@ -29,7 +29,7 @@ const deviceData = ref<Array<Record<string, any>>>([]);
 const pagination = ref({ pageSize: 10 });
 
 const toggleDevicePower = async (device: string, currentState: boolean) => {
-  const newState = currentState ? "off" : "on"; // Flip state
+  const newState = currentState ? "on" : "off"; 
   try {
     const response = await toggleDevice(device, newState);
     if (response) {
@@ -62,6 +62,7 @@ const fetchDeviceInfo = async () => {
     dehumidifierData.nickname = decodeBase64(dehumidifierData.nickname) || "Dehumidifier";
 
     deviceData.value = [exhaustData, humidifierData, dehumidifierData];
+    console.table(deviceData.value);
   } catch (error) {
     console.error("🚨 Error fetching device info:", error);
   }
@@ -104,7 +105,10 @@ const columns: DataTableColumns<any> = [
     render(row) {
       return h(NSwitch, {
         value: row.device_on,
-        "on-update:value": (newValue: boolean) => toggleDevicePower(row.device_name, newValue),
+        "on-update:value": (newValue: boolean) => {
+          console.log(newValue)
+          toggleDevicePower(row.device_name, newValue);
+        }  
       });
     },
   },
