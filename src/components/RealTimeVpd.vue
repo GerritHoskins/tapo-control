@@ -12,7 +12,8 @@
             :key="stage"
             :value="stage"
           >
-            {{ capitalize(stage.toString()) }} ({{ range[0] }} - {{ range[1] }} kPa)
+            {{ capitalize(stage.toString()) }} ({{ range[0] }} -
+            {{ range[1] }} kPa)
           </n-radio-button>
         </n-radio-group>
       </n-space>
@@ -194,8 +195,6 @@ onUnmounted(() => {
   max-width: 100%;
   margin: auto;
   text-align: center;
-}
-.rt-vpd {
   margin-top: 16px;
 }
 </style>

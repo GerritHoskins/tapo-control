@@ -2,7 +2,6 @@
   <n-card title="🔮 Predicted Device States" class="prediction-card">
     <n-space vertical>
       <n-button type="primary" @click="predict"> 🔄 Get Predictions </n-button>
-      <n-button type="primary" @click="predict"> 🔄 Get Predictions </n-button>
       <n-data-table
         :columns="columns"
         :data="predictedData"
@@ -95,7 +94,7 @@ const fetchPredictions = async () => {
         { device: "Humidifier", state: response.humidifier },
         { device: "Dehumidifier", state: response.dehumidifier },
       ];
-      message.success("✅ Predictions updated!");
+      // message.success("✅ Predictions updated!");
     } else {
       message.error("⚠️ Failed to retrieve predictions.");
     }
@@ -110,7 +109,7 @@ const fetchPredictionData = async () => {
     const response = await getPredictionData();
     if (response) {
       sensorData.value = response as SensorData;
-      message.success("✅ Predictions data received!");
+      // message.success("✅ Predictions data received!");
     } else {
       message.error("⚠️ Failed to retrieve prediction data.");
     }

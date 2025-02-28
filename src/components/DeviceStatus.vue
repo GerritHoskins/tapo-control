@@ -1,7 +1,6 @@
 <template>
   <n-card title="📡 Device Control & Status" class="device-panel">
     <n-space vertical>
-      <!-- ✅ Device Status Table with Power Toggle -->
       <n-data-table
         :bordered="false"
         :columns="columns"
@@ -19,27 +18,22 @@ import {
   getDehumidifierInfo,
   toggleDevice,
 } from "../api";
-import { ref, h, onMounted } from "vue";
+import { ref, h, onMounted, onUnmounted } from "vue";
 import { NTag, NSwitch, useMessage } from "naive-ui";
 import type { DataTableColumns } from "naive-ui";
 
 const message = useMessage();
-
 const deviceData = ref<Array<Record<string, any>>>([]);
 const pagination = ref({ pageSize: 10 });
+let pollingInterval: number | undefined = undefined;
 
 const toggleDevicePower = async (device: string, currentState: boolean) => {
-  const newState = currentState ? "on" : "off"; 
+  const newState = currentState ? "on" : "off";
   try {
     const response = await toggleDevice(device, newState);
     if (response) {
       message.success(`${device.charAt(0).toUpperCase() + device.slice(1)} turned ${newState.toUpperCase()}`);
-
-      // Update UI immediately after toggling
-      const deviceIndex = deviceData.value.findIndex((d) => d.device_name === device);
-      if (deviceIndex !== -1) {
-        deviceData.value[deviceIndex].device_on = newState === "on";
-      }
+      await fetchDeviceInfo();
     }
   } catch (error) {
     message.error(`Failed to toggle ${device}`);
@@ -62,13 +56,12 @@ const fetchDeviceInfo = async () => {
     dehumidifierData.nickname = decodeBase64(dehumidifierData.nickname) || "Dehumidifier";
 
     deviceData.value = [exhaustData, humidifierData, dehumidifierData];
-    console.table(deviceData.value);
+    console.log(deviceData.value)
   } catch (error) {
     console.error("🚨 Error fetching device info:", error);
   }
 };
 
-/** 🧩 Decode Base64 Names */
 const decodeBase64 = (str: string | null) => {
   try {
     return str ? atob(str) : "Unknown";
@@ -104,11 +97,10 @@ const columns: DataTableColumns<any> = [
     key: "device_on",
     render(row) {
       return h(NSwitch, {
-        value: row.device_on,
+        "v-model:value": row.device_on,
         "on-update:value": (newValue: boolean) => {
-          console.log(newValue)
           toggleDevicePower(row.device_name, newValue);
-        }  
+        },
       });
     },
   },
@@ -128,14 +120,23 @@ const columns: DataTableColumns<any> = [
   },
 ];
 
-const updateData = async () => {
-  await fetchDeviceInfo();
+const startPolling = () => {
+  pollingInterval = setInterval(fetchDeviceInfo, 5000);
 };
 
+const stopPolling = () => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+  }
+};
 
 onMounted(async () => {
-  await updateData();
-  console.log(deviceData.value);
+  await fetchDeviceInfo();
+  startPolling();
+});
+
+onUnmounted(() => {
+  stopPolling();
 });
 </script>
 

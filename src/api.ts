@@ -50,7 +50,7 @@ export const getDeviceApiUrl = (device: string) => {
 export const toggleDevice = async (device: string, state: "on" | "off") => {
   try {
     //const selectedDeviceApiUrl = getDeviceApiUrl(device);
-    console.log(state)
+    console.log(state);
     const response = await axios.post(`${DEV_BASE_URL}/${device}/${state}`);
     return response.data;
   } catch (error) {
@@ -181,11 +181,11 @@ export const detectAnomaly = async (sensorData: any) => {
 };
 
 export const getOptimizedControl = async (
-  sensorData: any
+  sensorData: SensorData
 ): Promise<string | null> => {
   try {
     const response = await axios.post(
-      `${DEV_BASE_URL}/optimize_control`,
+      `${DEV_BASE_URL}/adjust_conditions`,
       sensorData
     );
     return response.data.best_action;
@@ -207,5 +207,3 @@ export const getPredictedAction = async (sensorData: Record<string, any>) => {
     return null;
   }
 };
-
-

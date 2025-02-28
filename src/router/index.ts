@@ -1,22 +1,16 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
-import HomeView from "../views/HomeView.vue";
-import RealTimeVpdView from "../views/RealTimeVpdView.vue";
-import PredictedDeviceStates from "../views/PredictedDeviceStates.vue";
+import {
+  createRouter,
+  createWebHistory,
+  type RouteRecordRaw,
+} from "vue-router";
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
-    name: "home",
-    component: HomeView,
-  },
-  {
-    path: "/device-status",
-    name: "DeviceStatus",
+    name: "main",
     component: () =>
-      import(/* webpackChunkName: "about" */ "../views/DeviceStatusView.vue"),
+      import(/* webpackChunkName: "about" */ "../views/MainView.vue"),
   },
-  { path: "/real-time-vpd", name: "RealTimeVpd", component: RealTimeVpdView },
-  { path: "/predict", name: "PredictedDeviceStates", component: PredictedDeviceStates },
 ];
 
 const router = createRouter({
