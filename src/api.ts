@@ -23,6 +23,7 @@ export interface PredictedDeviceState {
   exhaust: boolean; 
   humidifier: boolean; 
   dehumidifier: boolean;
+}
 
 export const setVpdTarget = async (stage: string): Promise<void> => {
   await axios.post(
