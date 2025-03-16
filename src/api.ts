@@ -194,9 +194,13 @@ export const getOptimizedControl = async (
 
 export const getPredictedAction = async (sensorData: SensorData) => {
   try {
+    if (typeof sensorData !== "object") {
+      throw new Error("Invalid sensorData format. Expected an object.");
+    }
+
     const response = await axios.post(
       `${DEV_BASE_URL}/predict_action`,
-      sensorData,
+      JSON.stringify(sensorData), // Ensure proper JSON format
       {
         headers: {
           "Content-Type": "application/json",
@@ -204,12 +208,18 @@ export const getPredictedAction = async (sensorData: SensorData) => {
         },
       }
     );
-    return response.data.recommended_action;
-  } catch (error) {
-    console.error("🚨 RL Prediction API Error:", error);
+
+    if (!response.data || typeof response.data !== "object") {
+      throw new Error("Invalid API response format.");
+    }
+
+    return response.data.predicted_action || "unknown_action";
+  } catch (error: any) {
+    console.error("🚨 RL Prediction API Error:", error.response?.data || error.message);
     return null;
   }
 };
+
 
 export const getPredictedStates = async (sensorData: SensorData): Promise<PredictedDeviceState | null> => {
   try {
