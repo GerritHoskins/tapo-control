@@ -19,6 +19,11 @@ export interface SensorData {
   dehumidifier?: number;
 }
 
+export interface PredictedDeviceState {
+  exhaust: boolean; 
+  humidifier: boolean; 
+  dehumidifier: boolean;
+
 export const setVpdTarget = async (stage: string): Promise<void> => {
   await axios.post(
     `${DEV_BASE_URL}/set_vpd_target`,
@@ -205,24 +210,24 @@ export const getPredictedAction = async (sensorData: SensorData) => {
   }
 };
 
-export const getPredictedStates = async (sensorData: SensorData) => {
+export const getPredictedStates = async (sensorData: SensorData): Promise<PredictedDeviceState | null> => {
   try {
-    return axios
+    const response = await axios
       .post(`${DEV_BASE_URL}/predict`, sensorData, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
       })
-      .then((response) => {
-        return response
-      })
-      .catch((error) => {
-        console.error(
-          "🚨 Prediction API Error:",
-          error.response ? error.response.data : error
-        );
-      });
+      if(response)  {
+        return  {
+          "exhaust": response.data.exhaust,
+          "humidifier": response.data.humidifier,
+          "dehumidifier":  response.data.dehumidifier,
+        }
+      }
+
+      return null
   } catch (error) {
     console.error("Prediction API error:", error);
     return null;
