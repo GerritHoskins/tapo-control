@@ -133,13 +133,19 @@ export const getDeviceInfo = async () => {
 
 export const getPredictedStates = async (sensorData: SensorData) => {
   try {
-    const response = await axios.post(`${DEV_BASE_URL}/predict`, sensorData);
+    const response = await axios.post(`${DEV_BASE_URL}/predict`, sensorData, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
     return response.data;
   } catch (error) {
     console.error("Prediction API error:", error);
     return null;
   }
 };
+
 
 export const getPredictionData = async () => {
   try {
@@ -201,7 +207,13 @@ export const getPredictedAction = async (sensorData: Record<string, any>) => {
   try {
     const response = await axios.post(
       `${DEV_BASE_URL}/predict_action`,
-      sensorData
+      JSON.stringify(sensorData), // Ensure proper JSON serialization
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
     );
     return response.data.recommended_action;
   } catch (error) {
