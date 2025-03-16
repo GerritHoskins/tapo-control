@@ -215,7 +215,7 @@ export const getPredictedStates = async (sensorData: SensorData) => {
         },
       })
       .then((response) => {
-        console.log("✅ Prediction Response:", response.data);
+        return response
       })
       .catch((error) => {
         console.error(
