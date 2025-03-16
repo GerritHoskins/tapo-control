@@ -131,22 +131,6 @@ export const getDeviceInfo = async () => {
   }
 };
 
-export const getPredictedStates = async (sensorData: SensorData) => {
-  try {
-    const response = await axios.post(`${DEV_BASE_URL}/predict`, sensorData, {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Prediction API error:", error);
-    return null;
-  }
-};
-
-
 export const getPredictionData = async () => {
   try {
     const response = await axios.get(`${DEV_BASE_URL}/get_prediction_data`, {
@@ -203,11 +187,11 @@ export const getOptimizedControl = async (
   }
 };
 
-export const getPredictedAction = async (sensorData: Record<string, any>) => {
+export const getPredictedAction = async (sensorData: SensorData) => {
   try {
     const response = await axios.post(
       `${DEV_BASE_URL}/predict_action`,
-      JSON.stringify(sensorData), // Ensure proper JSON serialization
+      sensorData,
       {
         headers: {
           "Content-Type": "application/json",
@@ -218,6 +202,21 @@ export const getPredictedAction = async (sensorData: Record<string, any>) => {
     return response.data.recommended_action;
   } catch (error) {
     console.error("🚨 RL Prediction API Error:", error);
+    return null;
+  }
+};
+
+export const getPredictedStates = async (sensorData: SensorData) => {
+  try {
+    const response = await axios.post(`${DEV_BASE_URL}/predict`, sensorData, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Prediction API error:", error);
     return null;
   }
 };
