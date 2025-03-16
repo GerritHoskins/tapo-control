@@ -70,10 +70,10 @@ const decodeBase64 = (str: string | null) => {
   }
 };
 
-const classifyStatus = (status: boolean): { type: "success" | "error"; label: string } => ({
+/*const classifyStatus = (status: boolean): { type: "success" | "error"; label: string } => ({
   type: status ? "success" : "error",
   label: status ? "ON" : "OFF",
-});
+});*/
 
 const classifySignalStrength = (rssi: number): { type: "error" | "warning" | "success"; label: string } => {
   if (rssi <= -80) return { type: "error", label: "Weak" };

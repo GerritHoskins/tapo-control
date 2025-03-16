@@ -1,13 +1,21 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [vue()],
-    server: {
-        port: 8080
+  base: '/',	
+  plugins: [vue()],
+  server: {
+    port: 8080,
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000", // Adjust to match your backend
+        changeOrigin: true, // Ensure requests are forwarded correctly
+        rewrite: (path) => path.replace(/^\/api/, ""), // Optional: Strip `/api` if needed
       },
-      define: {
-        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false, // Add this flag
-      },
-})
+    },
+  },
+  define: {
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false, // Add this flag
+  },
+});

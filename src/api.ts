@@ -156,7 +156,6 @@ export const getPredictionData = async () => {
 export const detectAnomaly = async (sensorData: any) => {
   console.log("🔍 Sending data for anomaly detection:", sensorData);
 
-  // Ensure all expected features exist
   const formattedData = {
     temperature: sensorData.temperature ?? 0,
     leaf_temperature: sensorData.leaf_temperature ?? 0,
@@ -171,7 +170,8 @@ export const detectAnomaly = async (sensorData: any) => {
   try {
     const response = await axios.post(
       `${DEV_BASE_URL}/detect_anomaly`,
-      formattedData
+      formattedData,
+      { headers: { "Content-Type": "application/json" } }
     );
     return response.data;
   } catch (error) {
@@ -180,13 +180,15 @@ export const detectAnomaly = async (sensorData: any) => {
   }
 };
 
+
 export const getOptimizedControl = async (
   sensorData: SensorData
 ): Promise<string | null> => {
   try {
     const response = await axios.post(
-      `${DEV_BASE_URL}/adjust_conditions`,
-      sensorData
+      `${DEV_BASE_URL}/adjust_conditions`, 
+      sensorData, 
+      { headers: { "Content-Type": "application/json" } }
     );
     return response.data.best_action;
   } catch (error) {
