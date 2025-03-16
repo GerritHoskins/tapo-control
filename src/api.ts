@@ -170,14 +170,13 @@ export const detectAnomaly = async (sensorData: any) => {
   }
 };
 
-
 export const getOptimizedControl = async (
   sensorData: SensorData
 ): Promise<string | null> => {
   try {
     const response = await axios.post(
-      `${DEV_BASE_URL}/adjust_conditions`, 
-      sensorData, 
+      `${DEV_BASE_URL}/adjust_conditions`,
+      sensorData,
       { headers: { "Content-Type": "application/json" } }
     );
     return response.data.best_action;
@@ -208,13 +207,22 @@ export const getPredictedAction = async (sensorData: SensorData) => {
 
 export const getPredictedStates = async (sensorData: SensorData) => {
   try {
-    const response = await axios.post(`${DEV_BASE_URL}/predict`, sensorData, {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-    return response.data;
+    return axios
+      .post(`${DEV_BASE_URL}/predict`, sensorData, {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      })
+      .then((response) => {
+        console.log("✅ Prediction Response:", response.data);
+      })
+      .catch((error) => {
+        console.error(
+          "🚨 Prediction API Error:",
+          error.response ? error.response.data : error
+        );
+      });
   } catch (error) {
     console.error("Prediction API error:", error);
     return null;
