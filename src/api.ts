@@ -220,27 +220,39 @@ export const getPredictedAction = async (sensorData: SensorData) => {
   }
 };
 
-
 export const getPredictedStates = async (sensorData: SensorData): Promise<PredictedDeviceState | null> => {
   try {
-    const response = await axios
-      .post(`${DEV_BASE_URL}/predict`, sensorData, {
+    if (typeof sensorData !== "object" || sensorData === null) {
+      throw new Error("Invalid sensorData format. Expected a valid JSON object.");
+    }
+
+    console.log("📤 Sending request with data:", sensorData); // Debugging
+
+    const response = await axios.post(
+      `${DEV_BASE_URL}/predict`,
+      JSON.stringify(sensorData), // Ensure correct JSON format
+      {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-      })
-      if(response)  {
-        return  {
-          "exhaust": response.data.exhaust,
-          "humidifier": response.data.humidifier,
-          "dehumidifier":  response.data.dehumidifier,
-        }
       }
+    );
 
-      return null
-  } catch (error) {
-    console.error("Prediction API error:", error);
+    console.log("✅ API Response:", response.data); // Debugging
+
+    if (response.data && typeof response.data === "object") {
+      return {
+        exhaust: response.data.exhaust ?? false, // Ensure boolean values
+        humidifier: response.data.humidifier ?? false,
+        dehumidifier: response.data.dehumidifier ?? false,
+      };
+    }
+
+    throw new Error("Invalid API response format.");
+
+  } catch (error: any) {
+    console.error("🚨 Prediction API error:", error.response?.data || error.message);
     return null;
   }
 };
